@@ -1,0 +1,189 @@
+;; Author: Dane Magbuhos
+;; Date: 03/07/19
+;; Project: 03  
+;; 
+;;  Convert user input to hexadecimal number.
+;;
+;;  Assemble using NASM:  nasm -f elf64 hexConverter.asm
+;;  Compile with gcc:     gcc hexConverter.o cfunc.c -o converter.out
+;;
+
+%define STDIN         0
+%define STDOUT        1
+%define SYSCALL_EXIT  60
+%define SYSCALL_READ  0
+%define SYSCALL_WRITE 1
+%define BUFLEN 	      31
+
+
+	        SECTION .data	; initialized data section
+
+msg1:	   db "Enter Number: "	; user prompt
+len1:	   equ $-msg1		; length of first message
+
+msg2:	   db "Invalid Input!", 10 ; error message
+len2:	   equ $-msg2
+
+msg3:	   db "Hexadecimal value is: " ; Feedback
+len3:	   equ $-msg3
+
+msg4:	   db 10		; Linefeed
+len4:	   equ $-msg4
+
+hexConverter:	 db '0123456789ABCDEF'
+
+	  SECTION .bss	        ; uninitialized data section
+buf:	  resb BUFLEN		; buffer for read
+newstr:	  resb BUFLEN		; converted string
+count:	  resb 4		; reserve storage for user input bytes
+
+	        SECTION .text	; Code section.
+	        global  main	; let gcc see entry point
+	        extern printhex	; This routine is defined in the c function
+	        extern printf	; This routine will be utilized in the c function
+	
+main:		nop		; Entry point.
+start:				; address for gdb
+
+	;;  prompt user for input
+	;;
+	        mov rax, SYSCALL_WRITE ; write function
+	        mov rdi, STDOUT	       ; Arg1: file descriptor
+	        mov rsi, msg1	       ; Arg2: addr of message
+	        mov rdx, len1	       ; Arg3: length of message
+	        syscall		       ; 64-bit system call
+
+	;;  read user input
+	;;
+	        mov rax, SYSCALL_READ ; read function
+	        mov rdi, STDIN	      ; Arg1: file descriptor
+	        mov rsi, buf	      ; Arg2: addr of message
+	        mov rdx, BUFLEN	      ; Arg3: length of message
+	        syscall		      ; 64-bit system call
+
+	;;  error check
+	;;
+	        mov [count], rax ; save length of string read
+	        cmp rax, 0	 ; check if any chars read
+	        jle invalid	 ; <=0 chars read = not valid
+
+		cmp rax, 21	; check if 21 characters were read
+		je  read_OK	; 21 characters read, we are good
+		cmp rax, 20	; check if 20 characters were read
+		je  read_OK	; 20 characters read, we are good
+
+invalid:
+	  mov rax, SYSCALL_WRITE ; Or Print Error Message
+	  mov rdi, STDOUT	 ; Arg1: file descriptor
+	  mov rsi, msg2	         ; Arg2: addr of message
+	  mov rdx, len2	         ; Arg3: length of message
+	  syscall	         ; 64-bit system call
+	  jmp     exit	         ; skip over rest
+
+reset:
+	mov r8, 0		; allocates register to 0
+	mov rsi, buf            ; points to start of buffer
+	mov r9, [count] 	; saves a copy of length of string
+	dec r9			; gets rid of n + 1 space
+	ret
+
+nextActionA:
+
+	call reset 		; resets looping variables
+	mov rax, 0		; stores decimal value
+	jmp ASCIItoDec		; converts ASCII to decimal
+
+nextActionB:
+	
+	call reset		; resets looping variables
+	mov rdi, 0              ; push and pop register
+	mov r12, 0              ; push and pop counter
+	mov r13, 0 		; push and pop counter
+	jmp decToHex		; converts decimal to hex
+
+nextActionC:
+	
+	call reset		; resets looping variables
+	jmp init1                ; reaches final stage of output
+	
+read_OK:
+
+	mov rsi, buf	        ; points to start of buffer
+	mov r9, [count]         ; saves a copy of length of string
+	dec r9			; gets rid of n + 1 space
+	mov r8, 0 		; used as looping counter
+	jmp letterCheck         ; ensures only number chars are present
+	
+letterCheck:	
+
+	cmp r8, r9              ; is counter equal to length of string?
+	je nextActionA          ; executes action A
+	mov al, [rsi]  		; grabs input char
+	cmp al, '0'    		; is char less than 0?
+	jb invalid              ; invalid input indicator
+	cmp al, '9'             ; is char greater than 9?
+	ja invalid              ; invalid input indicator
+	inc rsi                 ; grab next char
+	inc r8                  ; increment traversal counter
+	jmp letterCheck         ; loops back to letter check
+
+ASCIItoDec:
+
+	mov rdi, 0	       ; initaliizes register
+	mov r12, 10            ; multiplier
+	mov dil, [rsi]	       ; grabs char
+	sub dil, '0'	       ; convert from ASCII to decimal
+	add rax, rdi	       ; stores converted value
+	inc r8		       ; increment looping variable
+	inc rsi		       ; get next char
+	cmp r8, r9	       ; is counter equal to string length?
+	je nextActionB	       ; execute action B
+	mul r12		       ; multiplies rax by multiplier	
+	jmp ASCIItoDec	       ; loops back to ASCIItoDec
+	
+decToHex:
+
+	cmp rax, 0	       ; is the quotient 0?
+	je init1	       ; execute action C
+	mov rdx, 0	       ; prepares dividend
+u	mov rbx, 16            ; base 16
+	div rbx                ; division operation
+
+storeRemainder:
+
+	add rdx, hexConverter 	; add offset to lookup table
+	mov dil, byte [rdx]	; finds hexadecimal equivalent
+	push rdi		; pushes hexadecimal value to stack
+	inc r13			; increment counter
+	jmp decToHex            ; loops back to hex converter
+init1:
+        ;  printout the precursor message
+	mov rax, SYSCALL_WRITE ; Print Message
+	mov rdi, STDOUT	       ; Arg1: file descriptor
+	mov rsi, msg3	       ; Arg2: addr of message
+	mov rdx, len3	       ; Arg3: length of message
+	syscall		       ; 64-bit system call
+
+outputHex:
+	
+	cmp r12, r13	       ; are there any chars to pass? 
+	jz init2	       ; jumps to last part of output
+	dec r13		       ; decrements counting register
+	pop rdi		       ; pops off value from stack
+	call printhex	       ; passes char to c function
+	jmp outputHex	       ; loops back to outputHex
+	
+init2:	
+      ;  printout the linefeed
+      mov rax, SYSCALL_WRITE ; Print Message
+      mov rdi, STDOUT	       ; Arg1: file descriptor
+      mov rsi, msg4	       ; Arg2: addr of message
+      mov rdx, len4	       ; Arg3: length of message
+      syscall		       ; 64-bit system call
+	
+	;;  final exit
+	;;
+exit:
+	mov  rax, SYSCALL_EXIT
+ 	mov  rdi, 0	; exit to shell
+	syscall

@@ -1,0 +1,120 @@
+Project Description
+This assembly code takes in a user's input and reverses the 
+letter strings. Special characters are not modified.
+
+************************************************************************
+0. Files:
+************************************************************************
+
+readme.txt	- This file
+atbash.asm	- The file you will be modifying and handing in
+
+List expected inputs/outputs
+
+************************************************************************
+1. Expected inputs/outputs
+************************************************************************
+Test 1
+
+Enter string: abcdef
+Original: abcdef
+Convert:  zyxwvu
+
+Test 2
+
+Enter string: AbCdEfGhI
+Original: AbCdEfGhI
+Convert:  ZyXwVuTsR
+
+Test 3
+
+Enter string: NoPqRsTuV
+Original: NoPqRsTuV
+Convert:  MlKjIhGfE
+
+Test 4
+
+Enter string: 1+1=Two
+Original: 1+1=Two
+Convert:  1+1=Gdl
+
+Test 5
+
+Enter string: retriever@umbc.edu
+Original: retriever@umbc.edu
+Convert:  ivgirvevi@fnyx.vwf
+
+Test 6
+
+Enter string: 1 One 2 Two 3 Three 4 Four 5 Five 6 Six
+Original: 1 One 2 Two 3 Three 4 Four 5 Five 6 Six
+Convert:  1 Lmv 2 Gdl 3 Gsivv 4 Ulfi 5 Urev 6 Hrc
+
+
+Test 7 (Note: In this test, only the enter key was input)
+
+Enter string: 
+Original: 
+Convert:  
+
+Test 8
+
+Enter string: 'quotes!'
+Original: 'quotes!'
+Convert:  'jflgvh!'
+
+Test 9
+
+Enter string: arithmetic+-%^&*
+Original: arithmetic+-%^&*
+Convert:  zirgsnvgrx+-%^&*
+
+Test 10
+
+Enter string: wefjhdjw^%^&%&^$$
+Original: wefjhdjw^%^&%&^$$
+Convert:  dvuqswqd^%^&%&^$$
+
+
+
+************************************************************************
+2. How to compile and use this project
+************************************************************************
+
+Compilation
+
+Use the following commands to build the project
+
+ $ nasm -f elf64 -g -F dwarf atbash.asm
+ $ ld -o atBashExec atBash.o
+ 
+Usage
+
+$ ./atBashExec
+
+************************************************************************
+3. Functionality (describe your contributions here)
+************************************************************************
+
+The toupper.asm file served as the foundation for this atbash.asm program.
+I have modified the toupper.asm to traverse through a string input and 
+calculate the reversed letter's ASCII value (e.g. 'a' = 'z').
+
+
+************************************************************************
+4. Limitations (if any)
+************************************************************************
+
+There are no limitations since the program successfully executes the 
+aforementioned output (See Expected Inputs/Outputs section)
+
+************************************************************************
+5. Applications (your thoughts) of this project
+************************************************************************
+
+This project could be useful for encrypting and decrypting basic and 
+letter based messages. In other words, reversing each letter string
+may prevent an adversary from viewing sensitive information.
+
+
+
